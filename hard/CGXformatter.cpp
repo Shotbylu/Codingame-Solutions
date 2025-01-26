@@ -2,136 +2,108 @@
 #include <string>
 #include <vector>
 #include <algorithm>
-#include <stack>
-#include <deque>
 
 using namespace std;
 
-string invalid = "()\t ";
+const string INVALID_CHARS = "()\t ";
 vector<string> CGX;
-
 bool quote = false;
-int index;
 int indentLevel = 0;
+size_t index = 0;
 
-void Reformat(string s)
-{
-    string str = "";
+void Reformat(const string& s) {
+    string str;
     
-    for(int i=0; i<s.length(); i++)
-    {
+    for (size_t i = 0; i < s.length(); ++i) {
         char c = s[i];
-        string indent(indentLevel*4, ' ');
-        
-        if(c == '\\' && s[i+1] == 't')
-        {
+        string indent(indentLevel * 4, ' ');
+
+        // Handle tab escape sequences
+        if (c == '\\' && i + 1 < s.length() && s[i + 1] == 't') {
             str += "    ";
-            i++;
+            ++i;
             continue;
         }
-        
-        if(quote)
-        {
+
+        if (quote) {
             str += c;
-            if(c != '\'') continue;
+            if (c == '\'') quote = false; // Toggle quote state
+        } else if (INVALID_CHARS.find(c) == string::npos) {
+            str += c;
         }
-        else if(invalid.find(c) == string::npos) str += c;
-        
-        
-        switch(c)
-        {
+
+        switch (c) {
             case '\'':
-            {
-                if(str.empty())
-                {
+                if (str.empty()) {
                     cout << indent << str;
-                    str.clear();
-                    str = "\'";
+                    str = "'";
                 }
                 quote = !quote;
                 break;
-            }
-            
+
             case '(':
-            {
-                if(!str.empty())
-                {
+                if (!str.empty()) {
                     cout << indent << str << endl;
                     str.clear();
                 }
                 indentLevel++;
-                cout << indent << '(' << endl;
+                cout << indent << "(\n";
                 break;
-            }
-            
+
             case ')':
-            {
-                if(!str.empty())
-                {
+                if (!str.empty()) {
                     cout << indent << str << endl;
                     str.clear();
                 }
-                indentLevel--;
+                indentLevel = max(0, indentLevel - 1);
                 
-                if(indent.length() > 4) indent = indent.substr(4);
-                else indent.clear();
-                
-                if(i < s.length()-1)
-                {
-                    size_t found = s.find_first_not_of(" ", i+1);
-                    
-                    if(s[found] == ';')
-                    {
-                        cout << indent << ");" << endl;
-                        i = s.find_first_not_of(" ", i+1);
+                if (i < s.length() - 1) {
+                    size_t found = s.find_first_not_of(" ", i + 1);
+                    if (found != string::npos && s[found] == ';') {
+                        cout << indent << ");\n";
+                        i = found;
+                    } else {
+                        cout << indent << ")\n";
                     }
-                    else cout << indent << ')' << endl;
+                } else {
+                    cout << indent << ")\n";
                 }
-                else cout << indent << ')' << endl;
-                
                 break;
-            }
-            
+
             case ';':
-            {
                 cout << indent << str << endl;
                 str.clear();
-                break;       
-            }
+                break;
         }
     }
-    string indent(indentLevel*4, ' ');
-    
-    if(!str.empty()) 
-    {
-        cout << indent << str;
-        
-        if(str.back() != '=') cout << endl;
-        else if (index < CGX.size()-1)
-        {
-            string next = CGX[index+1];
+
+    if (!str.empty()) {
+        cout << string(indentLevel * 4, ' ') << str;
+        if (str.back() != '=') {
+            cout << endl;
+        } else if (index < CGX.size() - 1) {
+            string next = CGX[index + 1];
             size_t found = next.find_first_not_of(" ");
-            if(next[found] == '(') cout << endl;
+            if (found != string::npos && next[found] == '(') {
+                cout << endl;
+            }
         }
     }
 }
 
-
-int main()
-{
+int main() {
     int N;
-    cin >> N; cin.ignore();
+    cin >> N;
+    cin.ignore();
+
     CGX.resize(N);
-    
-    for (int i = 0; i < N; i++) 
-    {
-        string CGXLine;
-        getline(cin, CGXLine);
-        CGX[i] = CGXLine;
+    for (int i = 0; i < N; ++i) {
+        getline(cin, CGX[i]);
     }
-    for(auto s : CGX)
-    {
-        Reformat(s);
-        index++;
+
+    for (index = 0; index < CGX.size(); ++index) {
+        Reformat(CGX[index]);
     }
+
+    return 0;
 }
